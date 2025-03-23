@@ -1847,7 +1847,7 @@ function setupExcelImport() {
             
             // 提示用户
             if (successCount > 0) {
-                alert(`成功导入${successCount}个Excel文件的答案数据`);
+                alert(`成功导入${successCount}个Excel文件的答案数据，已自动为您显示导入的书籍`);
             }
         }, 2000);
         
