@@ -1,12 +1,48 @@
 // 数据库初始化
 let answersDatabase = {};
 let booksDatabase = {
-    "1": ["你为什么不开花", "小兔的帽子", "森林音乐会", "彩虹桥的故事"],
-    "2": ["星星的旅行", "小猫钓鱼", "神奇的铅笔", "大树的秘密"],
-    "3": ["海底探险记", "山顶的风铃", "魔法书店", "影子朋友"],
-    "4": ["时间的礼物", "云朵邮递员", "奇妙图书馆", "月亮的微笑"],
-    "5": ["城市与森林", "寻找宝藏", "梦想的种子", "古老的钟表"],
-    "6": ["未来的信", "发明家俱乐部", "失落的王国", "星际旅行笔记"]
+    "1": [
+        "你为什么不开花", "小兔的帽子", "森林音乐会", "彩虹桥的故事",
+        "小松鼠的秋天", "蚂蚁和西瓜", "小猫找新家", "大象的长鼻子",
+        "奇怪的种子", "小熊的第一次冬眠", "红色的树叶", "池塘里的秘密",
+        "会飞的小鸟", "石头汤", "萝卜回家", "小花猫钓鱼",
+        "青蛙跳跳跳", "小熊捉蜜蜂", "小狐狸采蘑菇", "图图找朋友"
+    ],
+    "2": [
+        "星星的旅行", "小猫钓鱼", "神奇的铅笔", "大树的秘密",
+        "小兔子的胡萝卜", "会说话的花", "小猪的梦想", "风铃的声音",
+        "云朵工厂", "小熊的雨伞", "不睡觉的猫头鹰", "小蚂蚁搬家",
+        "颜色小镇", "小河的旅程", "影子的故事", "雪花的秘密",
+        "会跳舞的铅笔", "点点的世界", "大海的歌声", "小鸟的信"
+    ],
+    "3": [
+        "海底探险记", "山顶的风铃", "魔法书店", "影子朋友",
+        "神秘的公园", "图书馆的夜晚", "风的旅行", "树叶的信",
+        "月亮的房子", "星星的灯笼", "云朵的羊毛", "雨滴的故事",
+        "会跳舞的石头", "地下城堡", "消失的河流", "会走路的桥",
+        "荧光森林", "水下城市", "飞行的岛屿", "会说话的墙"
+    ],
+    "4": [
+        "时间的礼物", "云朵邮递员", "奇妙图书馆", "月亮的微笑",
+        "蓝色的河流", "小镇的钟表匠", "会唱歌的树", "天空的信使",
+        "神秘的灯塔", "雾中的森林", "梦想收集者", "银河的歌声",
+        "风的画家", "彩虹的尽头", "旧房子的故事", "记忆的收藏家",
+        "沙漠中的绿洲", "遗失的音符", "未完成的画", "夜晚的市场"
+    ],
+    "5": [
+        "城市与森林", "寻找宝藏", "梦想的种子", "古老的钟表",
+        "失落的地图", "穿越时空的信", "古老的书店", "海底的城堡",
+        "星星的收集者", "天空的边界", "记忆的博物馆", "忘记的旋律",
+        "雨中的城市", "梦境的守护者", "迷雾的小镇", "遗忘的花园",
+        "时间的长河", "光影的舞者", "城市的秘密", "孤独的灯塔"
+    ],
+    "6": [
+        "未来的信", "发明家俱乐部", "失落的王国", "星际旅行笔记",
+        "机器人的心", "时间旅行者", "平行世界的门", "科学家的实验室",
+        "未知星球的访客", "虚拟世界的冒险", "数据海洋中的探险", "思维迷宫",
+        "未来城市的设计师", "记忆备份站", "人工智能的梦", "量子隧道",
+        "科技森林", "时间碎片", "宇宙图书馆", "反重力实验"
+    ]
 };
 // 历史测评记录
 let historyRecords = [];
@@ -149,65 +185,42 @@ const api = {
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
     // 确保加载XLSX库
-    if (typeof XLSX === 'undefined') {
-        const script = document.createElement('script');
-        script.src = "https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js";
-        script.onload = function() {
-            console.log('XLSX库加载成功');
-        };
-        document.head.appendChild(script);
+    if (!window.XLSX) {
+        console.error('XLSX库未加载，Excel导入功能将不可用');
     }
     
-    console.log('页面初始化开始');
+    // 从本地存储加载数据
+    loadLocalData();
     
-    // 首先检查是否是分享链接访问
-    if (!checkForSharedReport()) {
-        // 从本地存储加载数据
-        initAnswersFromLocalStorage();
-        loadBooksFromLocalStorage();
-        
-        // 检查书籍数据
-        console.log('页面初始化时书籍数据库状态:');
-        debugBooksDatabase();
-        
-        // 正常初始化
-        initNavigation();
-        initGradeSelection();
-        setupAnswerSubmission();
-        setupStandardAnswersSave();
-        setupExcelImport();
-        loadHistoryRecords();
-        displayHistoryRecords();
-        displaySharedReports();
-        
-        // 初始化书籍管理功能
-        setupBookManagement();
-    }
+    // 初始化导航
+    setupNavigation();
     
-    // 设置按钮事件
-    document.getElementById('print-report').addEventListener('click', printReport);
-    document.getElementById('new-assessment').addEventListener('click', startNewAssessment);
+    // 初始化年级选择
+    initGradeSelection();
     
-    // 添加分享按钮的事件监听器
-    const shareReportBtn = document.createElement('button');
-    shareReportBtn.id = 'share-report';
-    shareReportBtn.className = 'primary-btn';
-    shareReportBtn.textContent = '分享报告';
-    shareReportBtn.addEventListener('click', shareReport);
+    // 设置答案提交
+    setupAnswerSubmission();
     
-    // 将分享按钮添加到报告页面的按钮组
-    const reportButtons = document.querySelector('#report-page .buttons');
-    if (reportButtons) {
-        // 移除导出PDF按钮
-        const exportPdfBtn = document.getElementById('export-pdf');
-        if (exportPdfBtn) {
-            exportPdfBtn.remove();
-        }
-        
-        reportButtons.appendChild(shareReportBtn);
-    }
+    // 设置答案保存
+    setupStandardAnswersSave();
     
-    console.log('页面初始化完成');
+    // 设置Excel导入
+    setupExcelImport();
+    
+    // 设置数据导出/导入功能
+    setupDataExportImport();
+    
+    // 设置书籍删除
+    setupBookDeletion();
+    
+    // 设置历史记录
+    setupHistoryRecords();
+    
+    // 设置分享功能
+    setupSharingFeature();
+    
+    // 设置打印功能
+    setupPrintFeature();
 });
 
 // 从本地存储加载书籍数据
@@ -1239,6 +1252,111 @@ function setupStandardAnswersSave() {
         
         alert('标准答案保存成功！');
     });
+}
+
+// 设置数据导出和导入功能
+function setupDataExportImport() {
+    // 创建导出按钮
+    const exportDataSection = document.createElement('div');
+    exportDataSection.className = 'data-export-import-container';
+    exportDataSection.innerHTML = `
+        <h3>数据导出/导入</h3>
+        <p class="instruction">导出所有答案库数据，便于备份或跨设备迁移</p>
+        <div class="buttons-container">
+            <button id="export-data-btn" class="secondary-btn">导出所有数据</button>
+            <button id="import-data-btn" class="secondary-btn">导入数据文件</button>
+            <input type="file" id="import-data-file" accept=".json" style="display:none">
+        </div>
+        <div id="export-status" style="margin-top: 10px;"></div>
+    `;
+    
+    // 添加到答案库管理页面
+    const answerManagement = document.getElementById('answer-management');
+    answerManagement.insertBefore(exportDataSection, document.querySelector('.excel-import-container'));
+    
+    // 设置导出功能
+    document.getElementById('export-data-btn').addEventListener('click', function() {
+        const exportData = {
+            booksDatabase: booksDatabase,
+            answersDatabase: answersDatabase,
+            exportTime: new Date().toISOString(),
+            version: '1.0'
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reading-assessment-data-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // 清理
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        // 显示状态
+        document.getElementById('export-status').innerHTML = `
+            <div class="success-message">数据导出成功！ 文件名: ${a.download}</div>
+        `;
+    });
+    
+    // 设置导入功能
+    document.getElementById('import-data-btn').addEventListener('click', function() {
+        document.getElementById('import-data-file').click();
+    });
+    
+    document.getElementById('import-data-file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                
+                // 验证导入的数据
+                if (!importedData.booksDatabase || !importedData.answersDatabase) {
+                    throw new Error('数据格式无效');
+                }
+                
+                // 导入数据
+                booksDatabase = importedData.booksDatabase;
+                answersDatabase = importedData.answersDatabase;
+                
+                // 保存到本地存储
+                localStorage.setItem('booksDatabase', JSON.stringify(booksDatabase));
+                localStorage.setItem('answersDatabase', JSON.stringify(answersDatabase));
+                
+                // 刷新界面
+                initGradeSelection();
+                
+                document.getElementById('export-status').innerHTML = `
+                    <div class="success-message">
+                        数据导入成功！导入了 ${Object.keys(importedData.answersDatabase).length} 本书的数据。
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('export-status').innerHTML = `
+                    <div class="error-message">导入失败: ${error.message}</div>
+                `;
+            }
+            
+            // 清空文件输入
+            this.value = '';
+        };
+        
+        reader.readAsText(file);
+    });
+}
+
+// 添加答案统计功能
+function setupAnswerStats() {
+    // ... existing code ...
 }
 
 // 添加自定义调试函数
@@ -2349,4 +2467,253 @@ function deleteBook(grade, bookName) {
     
     alert(`已成功删除${grade}年级的《${bookName}》`);
     return true;
-} 
+}
+
+// 从本地存储加载数据
+function loadLocalData() {
+    // 加载答案数据库
+    const storedAnswers = localStorage.getItem('answersDatabase');
+    if (storedAnswers) {
+        try {
+            answersDatabase = JSON.parse(storedAnswers);
+            console.log('从本地存储加载了答案数据库');
+        } catch (e) {
+            console.error('解析本地存储中的答案数据库失败:', e);
+        }
+    }
+    
+    // 加载书籍数据库
+    const storedBooks = localStorage.getItem('booksDatabase');
+    if (storedBooks) {
+        try {
+            booksDatabase = JSON.parse(storedBooks);
+            console.log('从本地存储加载了书籍数据库');
+        } catch (e) {
+            console.error('解析本地存储中的书籍数据库失败:', e);
+        }
+    }
+    
+    // 加载历史记录
+    const storedHistory = localStorage.getItem('historyRecords');
+    if (storedHistory) {
+        try {
+            historyRecords = JSON.parse(storedHistory);
+            console.log('从本地存储加载了历史记录');
+        } catch (e) {
+            console.error('解析本地存储中的历史记录失败:', e);
+        }
+    }
+}
+
+// 设置导航栏切换
+function setupNavigation() {
+    const navLinks = document.querySelectorAll('nav a');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 移除所有活动状态
+            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            
+            // 添加新的活动状态
+            this.classList.add('active');
+            
+            // 显示对应页面
+            const targetPage = document.getElementById(this.dataset.page);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // 如果是历史记录页，刷新历史记录
+            if (this.dataset.page === 'history-page') {
+                displayHistoryRecords();
+            }
+            
+            // 如果是分享记录页，刷新分享记录
+            if (this.dataset.page === 'shared-reports') {
+                displaySharedReports();
+            }
+        });
+    });
+}
+
+// 设置书籍删除功能
+function setupBookDeletion() {
+    const deleteBookBtn = document.getElementById('delete-selected-book-btn');
+    
+    if (deleteBookBtn) {
+        deleteBookBtn.addEventListener('click', function() {
+            const grade = document.getElementById('manage-grade').value;
+            const book = document.getElementById('manage-book').value;
+            
+            if (!grade || !book) {
+                alert('请先选择要删除的年级和书籍！');
+                return;
+            }
+            
+            // 确认删除
+            const confirmDelete = confirm(`确定要删除 ${grade}年级的《${book}》及其所有答案吗？此操作不可撤销。`);
+            
+            if (confirmDelete) {
+                // 从书籍数据库中删除
+                if (booksDatabase[grade]) {
+                    const bookIndex = booksDatabase[grade].indexOf(book);
+                    if (bookIndex !== -1) {
+                        booksDatabase[grade].splice(bookIndex, 1);
+                    }
+                }
+                
+                // 从答案数据库中删除
+                const bookKey = `${grade}-${book}`;
+                if (answersDatabase[bookKey]) {
+                    delete answersDatabase[bookKey];
+                }
+                
+                // 保存到本地存储
+                localStorage.setItem('booksDatabase', JSON.stringify(booksDatabase));
+                localStorage.setItem('answersDatabase', JSON.stringify(answersDatabase));
+                
+                // 刷新下拉列表
+                initGradeSelection();
+                
+                // 清空标准答案显示区域
+                document.getElementById('standard-answer-inputs').innerHTML = '';
+                document.getElementById('standard-answers-container').classList.add('hidden');
+                
+                alert(`已成功删除 ${grade}年级的《${book}》！`);
+            }
+        });
+    }
+}
+
+// 设置历史记录显示
+function setupHistoryRecords() {
+    // 加载历史记录
+    const historyContainer = document.getElementById('history-records');
+    
+    if (historyContainer) {
+        // 显示历史记录
+        displayHistoryRecords();
+    }
+}
+
+// 显示历史记录
+function displayHistoryRecords() {
+    const historyContainer = document.getElementById('history-records');
+    
+    if (historyContainer) {
+        historyContainer.innerHTML = '';
+        
+        if (historyRecords.length === 0) {
+            historyContainer.innerHTML = '<p class="no-data">暂无历史记录</p>';
+            return;
+        }
+        
+        // 按时间从新到旧排序
+        historyRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // 创建历史记录列表
+        const historyList = document.createElement('div');
+        historyList.className = 'history-list';
+        
+        historyRecords.forEach((record, index) => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            // 格式化日期
+            const recordDate = new Date(record.date);
+            const formattedDate = `${recordDate.getFullYear()}-${(recordDate.getMonth()+1).toString().padStart(2, '0')}-${recordDate.getDate().toString().padStart(2, '0')} ${recordDate.getHours().toString().padStart(2, '0')}:${recordDate.getMinutes().toString().padStart(2, '0')}`;
+            
+            historyItem.innerHTML = `
+                <div class="history-header">
+                    <h3>${record.studentName} - ${record.grade}年级《${record.book}》</h3>
+                    <span class="history-date">${formattedDate}</span>
+                </div>
+                <div class="history-summary">
+                    <span class="history-score">准确率: ${(record.score * 100).toFixed(1)}%</span>
+                    <button class="view-history-btn" data-index="${index}">查看报告</button>
+                </div>
+            `;
+            
+            historyList.appendChild(historyItem);
+        });
+        
+        historyContainer.appendChild(historyList);
+        
+        // 添加查看报告按钮事件
+        document.querySelectorAll('.view-history-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                const record = historyRecords[index];
+                
+                // 加载报告
+                loadReportFromHistory(record);
+                
+                // 切换到报告页面
+                document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                
+                document.querySelector('nav a[data-page="report-page"]').classList.add('active');
+                document.getElementById('report-page').classList.add('active');
+            });
+        });
+    }
+}
+
+// 设置分享功能
+function setupSharingFeature() {
+    // 创建分享按钮
+    const shareReportBtn = document.createElement('button');
+    shareReportBtn.id = 'share-report';
+    shareReportBtn.className = 'primary-btn';
+    shareReportBtn.textContent = '分享报告';
+    
+    // 将分享按钮添加到报告页面的按钮组
+    const reportButtons = document.querySelector('#report-page .buttons');
+    if (reportButtons) {
+        reportButtons.appendChild(shareReportBtn);
+    }
+    
+    // 添加分享按钮点击事件
+    if (shareReportBtn) {
+        shareReportBtn.addEventListener('click', shareReport);
+    }
+    
+    // 显示分享记录
+    displaySharedReports();
+}
+
+// 设置打印功能
+function setupPrintFeature() {
+    const printBtn = document.getElementById('print-report');
+    const newAssessmentBtn = document.getElementById('new-assessment');
+    
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    if (newAssessmentBtn) {
+        newAssessmentBtn.addEventListener('click', function() {
+            // 跳转到答案录入页面
+            document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            
+            document.querySelector('nav a[data-page="input-page"]').classList.add('active');
+            document.getElementById('input-page').classList.add('active');
+            
+            // 清空学生姓名输入
+            document.getElementById('student-name').value = '';
+            
+            // 重置答案选择区域
+            document.getElementById('questions-container').classList.add('hidden');
+            document.getElementById('answer-inputs').innerHTML = '';
+        });
+    }
+}
+
+// 添加自定义调试函数
+// ... existing code ...

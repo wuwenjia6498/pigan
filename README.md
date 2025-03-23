@@ -14,8 +14,28 @@
 - 报告分享：生成可分享的测评报告链接
 - 历史记录：查看并管理所有批改历史
 - 批量导入：支持从Excel批量导入标准答案库，一次处理多个文件
+- 动态题目数量：支持根据实际题目数量显示(15题/20题等不同题量)
+- 数据导出/导入：支持将系统数据导出为文件，便于备份和跨设备迁移
 
 ## 新功能更新
+
+### 动态题目数量支持
+
+系统现在可以根据实际题目数量灵活显示，不再固定为20题：
+
+- 针对只有15题的测试将仅显示15题
+- 自动检测题目的实际数量
+- 新建题库时默认提供15题的输入框
+- 可以根据需要继续添加或删除题目
+
+### 数据导出/导入功能
+
+为方便数据备份和跨设备迁移，新增数据导出和导入功能：
+
+- 数据导出：一键将当前所有答案库和书籍数据导出为JSON文件
+- 数据导入：从之前导出的文件中导入数据，快速恢复或迁移数据
+- 批量迁移：支持一次性导入包含多本书的数据文件
+- 适用场景：更换设备、浏览器数据丢失恢复、不同人员间数据共享
 
 ### 批量导入Excel答案库
 
@@ -61,6 +81,14 @@
 3. 点击"导入Excel"按钮开始导入
 4. 查看导入进度和结果
 
+### 数据导出与导入
+
+1. 进入"答案库管理"页面
+2. 在数据导出/导入区域：
+   - 点击"导出所有数据"将当前所有答案库和书籍数据保存为JSON文件
+   - 点击"导入数据文件"从之前导出的文件中恢复数据
+3. 导入后系统会自动刷新，显示导入的书籍和答案数据
+
 ### 查看测评报告
 
 - 答案提交后自动生成测评报告
@@ -76,7 +104,7 @@
 
 ## 隐私说明
 
-本系统所有数据均存储在本地浏览器中，不会上传到服务器。关闭浏览器或清除浏览器数据可能会导致已保存的数据丢失。
+本系统所有数据均存储在本地浏览器中，不会上传到服务器。关闭浏览器或清除浏览器数据可能会导致已保存的数据丢失。请定期使用数据导出功能备份重要数据。
 
 ## 技术说明
 
@@ -165,136 +193,13 @@
    - 系统将自动保存导入的数据到浏览器本地存储
    - 建议每导入一本书后检查数据是否正确
    - 避免刷新页面或关闭浏览器导致数据丢失
+   - 建议使用新增的数据导出功能定期备份所有数据
 
-#### 系统实现代码
-
-系统已整合以下代码实现Excel导入功能：
-
-```javascript
-// 导入Excel功能实现
-function setupExcelImport() {
-    // 创建导入按钮
-    const importExcelBtn = document.createElement('button');
-    importExcelBtn.textContent = '导入Excel答案库';
-    importExcelBtn.className = 'primary-btn';
-    importExcelBtn.style.marginTop = '20px';
-    document.querySelector('#answer-management .form-container').appendChild(importExcelBtn);
-    
-    // 添加文件输入控件（隐藏）
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls, .csv';
-    fileInput.style.display = 'none';
-    document.querySelector('#answer-management .form-container').appendChild(fileInput);
-    
-    // 点击导入按钮时触发文件选择
-    importExcelBtn.addEventListener('click', function() {
-        fileInput.click();
-    });
-    
-    // 文件选择后处理
-    fileInput.addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        try {
-            const data = await readExcelFile(file);
-            processExcelData(data);
-            alert('答案库导入成功！');
-        } catch (error) {
-            alert('导入失败，请检查文件格式！');
-            console.error(error);
-        }
-    });
-}
-
-// 处理Excel数据并添加到答案库
-function processExcelData(data) {
-    const grade = document.getElementById('manage-grade').value;
-    const book = document.getElementById('manage-book').value;
-    
-    if (!grade || !book) {
-        alert('请先选择年级和书籍！');
-        return;
-    }
-    
-    const bookKey = `${grade}-${book}`;
-    
-    // 准备数据数组
-    const answers = [];
-    const dimensions = [];
-    const questions = [];
-    const options = [];
-    const explanations = [];
-    
-    // 处理每一行数据
-    data.forEach(row => {
-        const index = parseInt(row.number) - 1;
-        
-        // 存储答案
-        answers[index] = row.answer;
-        
-        // 存储维度
-        const dimensionMap = {
-            '获取信息维度': 0,
-            '整体感知维度': 1,
-            '解释推断维度': 2,
-            '评价鉴赏维度': 3,
-            '转化运用维度': 4
-        };
-        dimensions[index] = dimensionMap[row.dimension] || 0;
-        
-        // 存储题目和选项
-        questions[index] = row.question;
-        options[index] = {
-            A: row.optionA,
-            B: row.optionB,
-            C: row.optionC,
-            D: row.optionD
-        };
-        
-        // 存储解析
-        explanations[index] = row.explanation;
-    });
-    
-    // 保存到答案库
-    answersDatabase[bookKey] = {
-        answers: answers,
-        dimensions: dimensions,
-        questions: questions,
-        options: options,
-        explanations: explanations
-    };
-    
-    // 保存到本地存储
-    localStorage.setItem('answersDatabase', JSON.stringify(answersDatabase));
-}
-```
-
-### 本地存储功能
-
-为确保导入的答案库数据不会丢失，系统实现了本地存储功能：
-
-```javascript
-// 初始化时从本地存储加载数据
-function initAnswersFromLocalStorage() {
-    const savedAnswers = localStorage.getItem('answersDatabase');
-    if (savedAnswers) {
-        try {
-            answersDatabase = JSON.parse(savedAnswers);
-            console.log('从本地存储加载了答案库数据');
-        } catch (e) {
-            console.error('读取本地存储数据失败', e);
-        }
-    }
-}
-
-// 在页面加载时调用
-document.addEventListener('DOMContentLoaded', function() {
-    initAnswersFromLocalStorage();
-    // ... 其他初始化函数
-});
-```
+4. 数据备份与迁移：
+   - 完成所有导入后，强烈建议使用"导出所有数据"功能备份
+   - 导出的JSON文件包含完整的书籍和答案库数据
+   - 可随时通过"导入数据文件"恢复数据
+   - 适用于更换电脑或浏览器时的数据迁移
 
 ## 错题分析与能力评估
 
