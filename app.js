@@ -222,6 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置Excel导入
     setupExcelImport();
     
+    // 设置数据导出/导入功能
+    setupDataExportImport();
+    
     // 设置书籍删除
     setupBookDeletion();
     
@@ -1622,7 +1625,6 @@ function setupExcelImport() {
         // 处理每个文件
         let processedCount = 0;
         let successCount = 0;
-        let importedBooks = []; // 存储成功导入的书籍信息
         
         // 处理所有文件
         for (const file of files) {
@@ -1746,12 +1748,6 @@ function setupExcelImport() {
                         
                         updateFileStatus(file.name, '导入成功', true);
                         successCount++;
-                        
-                        // 记录导入的书籍信息，为后续自动选择做准备
-                        importedBooks.push({
-                            grade: fileInfo.grade,
-                            book: fileInfo.book
-                        });
                     } else {
                         updateFileStatus(file.name, '未找到有效数据', false);
                     }
@@ -1784,70 +1780,13 @@ function setupExcelImport() {
             // 再次调试书籍数据库
             debugBooksDatabase();
             
-            // 刷新所有下拉框选项
+            // 刷新下拉框选项
             initGradeSelection();
             console.log('Excel导入完成后，刷新下拉框前的booksDatabase:', booksDatabase);
             
-            // 自动选择最后导入的书籍
-            if (importedBooks.length > 0) {
-                const lastImported = importedBooks[importedBooks.length - 1];
-                
-                // 在答案库管理页自动选择导入的年级和书籍
-                const manageGradeSelect = document.getElementById('manage-grade');
-                const manageBookSelect = document.getElementById('manage-book');
-                
-                if (manageGradeSelect && manageBookSelect) {
-                    // 设置年级选择器值并触发change事件
-                    manageGradeSelect.value = lastImported.grade;
-                    // 手动触发change事件
-                    const event = new Event('change');
-                    manageGradeSelect.dispatchEvent(event);
-                    
-                    // 等待书籍下拉框更新后，再选择书籍
-                    setTimeout(() => {
-                        manageBookSelect.value = lastImported.book;
-                        manageBookSelect.dispatchEvent(new Event('change'));
-                        
-                        // 自动显示导入的书籍的标准答案
-                        const bookKey = `${lastImported.grade}-${lastImported.book}`;
-                        if (answersDatabase[bookKey]) {
-                            // 显示标准答案容器
-                            const standardAnswersContainer = document.getElementById('standard-answers-container');
-                            if (standardAnswersContainer) {
-                                standardAnswersContainer.classList.remove('hidden');
-                            }
-                            displayStandardAnswerInputs(answersDatabase[bookKey]);
-                        }
-                    }, 100);
-                    
-                    // 切换到答案库管理标签页
-                    const answerManagementTab = document.querySelector('a[data-page="answer-management"]');
-                    if (answerManagementTab) {
-                        answerManagementTab.click();
-                    }
-                }
-                
-                // 在答案录入页也自动选择导入的年级和书籍
-                const gradeSelect = document.getElementById('grade');
-                const bookSelect = document.getElementById('book');
-                
-                if (gradeSelect && bookSelect) {
-                    // 设置年级选择器值并触发change事件
-                    gradeSelect.value = lastImported.grade;
-                    const gradeEvent = new Event('change');
-                    gradeSelect.dispatchEvent(gradeEvent);
-                    
-                    // 等待书籍下拉框更新后，再选择书籍
-                    setTimeout(() => {
-                        bookSelect.value = lastImported.book;
-                        bookSelect.dispatchEvent(new Event('change'));
-                    }, 100);
-                }
-            }
-            
             // 提示用户
             if (successCount > 0) {
-                alert(`成功导入${successCount}个Excel文件的答案数据`);
+                alert(`成功导入${successCount}个Excel文件的答案数据，可在下拉菜单中选择查看`);
             }
         }, 2000);
         
@@ -2970,138 +2909,6 @@ function setupPrintFeature() {
             document.getElementById('questions-container').classList.add('hidden');
             document.getElementById('answer-inputs').innerHTML = '';
         });
-    }
-}
-
-// 设置书籍展示功能
-function setupBooksGallery() {
-    console.log('设置书籍展示功能');
-    
-    // 获取相关DOM元素
-    const booksGallery = document.getElementById('imported-books-gallery');
-    const filterButtons = document.querySelectorAll('.books-filter .filter-btn');
-    
-    if (!booksGallery) return;
-    
-    // 初始化展示所有书籍
-    displayBooksGallery('all');
-    
-    // 设置筛选按钮事件
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // 移除所有按钮的active类
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // 给当前点击的按钮添加active类
-            this.classList.add('active');
-            
-            // 获取年级
-            const grade = this.getAttribute('data-grade');
-            
-            // 显示对应年级的书籍
-            displayBooksGallery(grade);
-        });
-    });
-}
-
-// 显示书籍展示区
-function displayBooksGallery(gradeFilter) {
-    console.log('显示书籍展示区，筛选年级:', gradeFilter);
-    
-    const booksGallery = document.getElementById('imported-books-gallery');
-    
-    if (!booksGallery) return;
-    
-    // 清空当前内容
-    booksGallery.innerHTML = '';
-    
-    // 统计所有书籍总数
-    let totalBooks = 0;
-    Object.keys(booksDatabase).forEach(grade => {
-        if (booksDatabase[grade]) {
-            totalBooks += booksDatabase[grade].length;
-        }
-    });
-    
-    // 如果没有书籍，显示提示
-    if (totalBooks === 0) {
-        booksGallery.innerHTML = '<div class="no-books-message">暂无已导入的书籍，请先导入Excel文件</div>';
-        return;
-    }
-    
-    // 生成书籍卡片
-    let booksCount = 0;
-    
-    Object.keys(booksDatabase).forEach(grade => {
-        // 跳过非数字的键（如果有）
-        if (isNaN(parseInt(grade))) return;
-        
-        // 如果设置了筛选且不是"all"，则只显示对应年级
-        if (gradeFilter !== 'all' && grade !== gradeFilter) return;
-        
-        // 获取当前年级的书籍
-        const books = booksDatabase[grade] || [];
-        
-        // 为每本书创建卡片
-        books.forEach(book => {
-            booksCount++;
-            
-            // 创建书籍卡片
-            const bookItem = document.createElement('div');
-            bookItem.className = 'book-item';
-            bookItem.setAttribute('data-grade', grade);
-            bookItem.setAttribute('data-book', book);
-            
-            // 使用书籍标题首字母作为封面
-            const firstChar = book.charAt(0);
-            
-            // 构建卡片内容
-            bookItem.innerHTML = `
-                <div class="book-grade">${grade}年级</div>
-                <div class="book-cover">${firstChar}</div>
-                <div class="book-title">${book}</div>
-            `;
-            
-            // 添加点击事件
-            bookItem.addEventListener('click', function() {
-                const clickedGrade = this.getAttribute('data-grade');
-                const clickedBook = this.getAttribute('data-book');
-                
-                // 设置年级和书籍下拉框
-                const gradeSelect = document.getElementById('grade');
-                const bookSelect = document.getElementById('book');
-                
-                if (gradeSelect && bookSelect) {
-                    // 设置年级
-                    gradeSelect.value = clickedGrade;
-                    
-                    // 触发年级change事件以更新书籍下拉框
-                    const event = new Event('change');
-                    gradeSelect.dispatchEvent(event);
-                    
-                    // 等待书籍下拉框更新
-                    setTimeout(() => {
-                        // 设置书籍
-                        bookSelect.value = clickedBook;
-                        
-                        // 触发书籍change事件
-                        bookSelect.dispatchEvent(new Event('change'));
-                    }, 100);
-                }
-            });
-            
-            // 添加到展示区
-            booksGallery.appendChild(bookItem);
-        });
-    });
-    
-    // 如果筛选后没有书籍，显示提示
-    if (booksCount === 0) {
-        if (gradeFilter === 'all') {
-            booksGallery.innerHTML = '<div class="no-books-message">暂无已导入的书籍，请先导入Excel文件</div>';
-        } else {
-            booksGallery.innerHTML = `<div class="no-books-message">${gradeFilter}年级暂无已导入的书籍</div>`;
-        }
     }
 }
 
